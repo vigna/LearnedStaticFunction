@@ -1,6 +1,6 @@
 % IMPORT-DATA bench data/bench.txt
 % SQL DELETE FROM bench WHERE quant != "float16"
-% SQL DELETE FROM bench WHERE comp == "ours" AND storage_name != "Filtered-Fano50"
+% SQL DELETE FROM bench WHERE comp == "ours" AND storage_name != "Filtered-Fano50_Opt"
 % SQL ALTER TABLE bench ADD ds_and_model float
 % SQL UPDATE bench SET ds_and_model = storage_bits + COALESCE(model_bits, 0)
 
@@ -10,14 +10,14 @@
 	\begin{tabular}{ll rrr}
 		\toprule
         \multirow{2}{*}{Dataset ($H_0$)} & \multirow{2}{*}{Competitor} & Constr. & Space    & Query \\
-                                         &                             & ns/key  & bits/key & ns/key  \\
+                                         &                             & \textmu{}s/key  & bits/key & \changed{\textmu{}}s/key  \\
 
 		
-		%% TABULAR REFORMAT(col 3=(precision=4) col 2,4=(precision=0))
+		%% TABULAR REFORMAT(col 3=(precision=4) col 2,4=(precision=3))
 		%% SELECT
-		%%    IIF(comp == "ours",
+		%%    IIF(comp == "ours" AND ds_and_model == (SELECT MIN(inner.ds_and_model) FROM bench AS inner WHERE outer.dataset_name==inner.dataset_name AND inner.comp == "ours"),
 		%%    "\midrule\multirow{"||
-		%%    	(SELECT COUNT(DISTINCT inner.comp) FROM bench AS inner WHERE outer.dataset_name==inner.dataset_name)
+		%%    	(SELECT COUNT(*) FROM bench AS inner WHERE outer.dataset_name==inner.dataset_name AND (comp != "ours" OR inner.ds_and_model == (SELECT MIN(innerin.ds_and_model) FROM bench AS innerin WHERE inner.dataset_name==innerin.dataset_name AND innerin.comp == "ours") OR inner.query_nanos == (SELECT MIN(innerin.query_nanos) FROM bench AS innerin WHERE inner.dataset_name==innerin.dataset_name AND innerin.comp == "ours")))
 		%%	||"}{*}{" ||
 		%%    CASE
 		%%      WHEN outer.dataset_name=="gaussian0" THEN "gauss $\sigma$=0.25"
@@ -27,33 +27,36 @@
 		%%      ELSE outer.dataset_name
 		%%    END || " (" || ROUND(outer.entropy, 2) || ")}","") AS ds,
 		%%  IIF(outer.comp!="ours", IIF(outer.comp=="ourCSF","\textbf{Ours} (CSF)",outer.comp), "\textbf{Ours} (" || IIF(outer.dataset_name LIKE "gaussian%", "GNB", IIF(outer.model_l==0, "LR", "L" || outer.model_l || " U" || outer.model_h)) || ")") AS name,
-		%%  1000.0 * 1000.0 * (1000.0 * COALESCE(outer.training_seconds, 0) + outer.construct_ms) / outer.size,
+		%%  1000.0 * (1000.0 * COALESCE(outer.training_seconds, 0) + outer.construct_ms) / outer.size,
 		%%  ROUND(ds_and_model, 4),
-		%%  outer.query_nanos
+		%%  outer.query_nanos/1000.0
 		%% FROM bench AS outer
-		%% WHERE NOT outer.dataset_name LIKE "gaussian%" AND (comp != "ours" OR ds_and_model == (SELECT MIN(inner.ds_and_model) FROM bench AS inner WHERE outer.dataset_name==inner.dataset_name))
-		%% ORDER BY outer.dataset_name, comp DESC
-  \midrule\multirow{4}{*}{covertype (1.74)} & \textbf{Ours} (L2 U50) & 119573 & 0.6360 &  916 \\
-                                            &    \textbf{Ours} (CSF) &    324 & 1.8020 &   58 \\
-                                            &                    GOV &    997 & 1.9404 &  197 \\
-                                            &                   BuRR &     68 & 3.0471 &   10 \\
-       \midrule\multirow{4}{*}{nids (2.38)} & \textbf{Ours} (L2 U50) &  33262 & 1.1573 &  935 \\
-                                            &    \textbf{Ours} (CSF) &    392 & 2.4451 &   68 \\
-                                            &                    GOV &   1021 & 2.5642 &  156 \\
-                                            &                   BuRR &     69 & 4.0541 &   14 \\
-      \midrule\multirow{4}{*}{songs (6.25)} & \textbf{Ours} (L2 U50) &  34448 & 4.1005 & 1847 \\
-                                            &    \textbf{Ours} (CSF) &    866 & 6.3102 &   68 \\
-                                            &                    GOV &   6811 & 6.5181 &  177 \\
-                                            &                   BuRR &     67 & 7.0823 &   17 \\
-       \midrule\multirow{4}{*}{urls (0.99)} &     \textbf{Ours} (LR) & 102578 & 0.0526 &  202 \\
-                                            &    \textbf{Ours} (CSF) &    262 & 1.0180 &   22 \\
-                                            &                    GOV &   1191 & 1.0941 &  100 \\
-                                            &                   BuRR &     64 & 1.0266 &    5 \\
-  % END TABULAR SELECT    IIF(comp == "ours",    "\midrule\multirow{"||    	(...)})
+		%% WHERE NOT outer.dataset_name LIKE "gaussian%" AND (comp != "ours" OR ds_and_model == (SELECT MIN(inner.ds_and_model) FROM bench AS inner WHERE outer.dataset_name==inner.dataset_name AND inner.comp == "ours") OR query_nanos == (SELECT MIN(inner.query_nanos) FROM bench AS inner WHERE outer.dataset_name==inner.dataset_name AND inner.comp == "ours"))
+		%% ORDER BY outer.dataset_name, comp DESC, ds_and_model
+  \midrule\multirow{5}{*}{covertype (1.74)} & \textbf{Ours} (L2 U50) & 241.980 & 0.6360 & 2.212 \\
+                                            &     \changed{\textbf{Ours} (LR)} &  \changed{58.857} & \changed{1.0050} & \changed{1.023} \\
+                                            &    \textbf{Ours} (CSF) &   0.658 & 1.8020 & 0.125 \\
+                                            &                    GOV &   1.613 & 1.9404 & 0.342 \\
+                                            &                   BuRR &   0.137 & 3.0471 & 0.021 \\
+       \midrule\multirow{5}{*}{nids (2.38)} & \textbf{Ours} (L2 U50) &  67.449 & 1.1573 & 2.290 \\
+                                            &     \changed{\textbf{Ours} (LR)} &  \changed{45.085} & \changed{1.3564} & \changed{1.084} \\
+                                            &    \textbf{Ours} (CSF) &   0.795 & 2.4451 & 0.149 \\
+                                            &                    GOV &   1.801 & 2.5643 & 0.244 \\
+                                            &                   BuRR &   0.138 & 4.0541 & 0.029 \\
+      \midrule\multirow{5}{*}{songs (6.25)} & \textbf{Ours} (L2 U50) &  71.538 & 4.1005 & 4.569 \\
+                                            &     \changed{\textbf{Ours} (LR)} &  \changed{42.595} & \changed{4.5231} & \changed{3.522} \\
+                                            &    \textbf{Ours} (CSF) &   1.751 & 6.3102 & 0.156 \\
+                                            &                    GOV &  13.683 & 6.5181 & 0.269 \\
+                                            &                   BuRR &   0.136 & 7.0823 & 0.040 \\
+       \midrule\multirow{4}{*}{urls (0.99)} &     \textbf{Ours} (LR) & 206.440 & 0.0526 & 0.561 \\
+                                            &    \textbf{Ours} (CSF) &   0.536 & 1.0180 & 0.052 \\
+                                            &                    GOV &   2.042 & 1.0941 & 0.186 \\
+                                            &                   BuRR &   0.128 & 1.0266 & 0.011 \\
+  % END TABULAR SELECT    IIF(comp == "ours" AND ds_and_model == (SELECT MIN(...)))
               
 \midrule
 
-		%% TABULAR REFORMAT(col 3=(precision=4) col 2,4=(precision=0))
+		%% TABULAR REFORMAT(col 3=(precision=4) col 2,4=(precision=3))
 		%% SELECT
 		%%    IIF(comp == "ours",
 		%%    "\multirow{"||
@@ -67,34 +70,34 @@
 		%%      ELSE outer.dataset_name
 		%%    END || " (" || ROUND(outer.entropy, 2) || ")}","") AS ds,
 		%%  IIF(outer.comp!="ours", IIF(outer.comp=="ourCSF","\textbf{Ours} (CSF)",outer.comp), "\textbf{Ours} (" || IIF(outer.dataset_name LIKE "gaussian%", "GNB", IIF(outer.model_l==0, "LR", "L" || outer.model_l || " U" || outer.model_h)) || ")") AS name,
-		%%  1000.0 * 1000.0 * (1000.0 * COALESCE(outer.training_seconds, 0) + outer.construct_ms) / outer.size,
+		%%  1000.0 * (1000.0 * COALESCE(outer.training_seconds, 0) + outer.construct_ms) / outer.size,
 		%%  ROUND(ds_and_model, 4),
-		%%  outer.query_nanos
+		%%  outer.query_nanos/1000.0
 		%% FROM bench AS outer
 		%% WHERE outer.dataset_name LIKE "gaussian%" AND comp == "ours" AND ds_and_model == (SELECT MIN(inner.ds_and_model) FROM bench AS inner WHERE outer.dataset_name==inner.dataset_name)
 		%% ORDER BY outer.dataset_name, comp DESC
-  \multirow{1}{*}{gauss $\sigma$=0.25 (3.0)} & \textbf{Ours} (GNB) & 183 & 0.0006 & 179 \\
-   \multirow{1}{*}{gauss $\sigma$=0.5 (3.0)} & \textbf{Ours} (GNB) & 269 & 0.1665 & 212 \\
-  \multirow{1}{*}{gauss $\sigma$=0.75 (3.0)} & \textbf{Ours} (GNB) & 370 & 0.6066 & 240 \\
-     \multirow{1}{*}{gauss $\sigma$=1 (3.0)} & \textbf{Ours} (GNB) & 407 & 0.9845 & 235 \\
+  \multirow{1}{*}{gauss $\sigma$=0.25 (3.0)} & \textbf{Ours} (GNB) & 0.448 & 0.0006 & 0.352 \\
+   \multirow{1}{*}{gauss $\sigma$=0.5 (3.0)} & \textbf{Ours} (GNB) & 0.618 & 0.1665 & 0.436 \\
+  \multirow{1}{*}{gauss $\sigma$=0.75 (3.0)} & \textbf{Ours} (GNB) & 0.840 & 0.6066 & 0.500 \\
+     \multirow{1}{*}{gauss $\sigma$=1 (3.0)} & \textbf{Ours} (GNB) & 0.936 & 0.9845 & 0.513 \\
   % END TABULAR SELECT    IIF(comp == "ours",    "\multirow{"||    	1	||"}{*}{...})
 
 
 \midrule\multirow{3}{*}{gauss any $\sigma$}
 
-		%% TABULAR REFORMAT(col 3=(precision=4) col 2,4=(precision=0))
+		%% TABULAR REFORMAT(col 3=(precision=4) col 2,4=(precision=3))
 		%% SELECT
 		%%    "" AS ds,
 		%%  IIF(outer.comp!="ours", IIF(outer.comp=="ourCSF","\textbf{Ours} (CSF)",outer.comp), "\textbf{Ours} (" || IIF(outer.dataset_name LIKE "gaussian%", "GNB", IIF(outer.model_l==0, "LR", "L" || outer.model_l || " U" || outer.model_h)) || ")") AS name,
-		%%  1000.0 * 1000.0 * (1000.0 * COALESCE(outer.training_seconds, 0) + outer.construct_ms) / outer.size,
+		%%  1000.0 * (1000.0 * COALESCE(outer.training_seconds, 0) + outer.construct_ms) / outer.size,
 		%%  ROUND(ds_and_model, 4),
-		%%  outer.query_nanos
+		%%  outer.query_nanos/1000.0
 		%% FROM bench AS outer
 		%% WHERE outer.dataset_name == "gaussian0" AND comp != "ours"
 		%% ORDER BY outer.dataset_name, comp DESC
-   & \textbf{Ours} (CSF) &  681 & 3.0159 &  73 \\
-   &                 GOV & 1150 & 3.1485 & 114 \\
-   &                BuRR &   69 & 3.0454 &  27 \\
+   & \textbf{Ours} (CSF) & 1.374 & 3.0159 & 0.141 \\
+   &                 GOV & 2.180 & 3.1485 & 0.202 \\
+   &                BuRR & 0.136 & 3.0454 & 0.053 \\
   % END TABULAR SELECT    "" AS ds,  IIF(outer.comp!="ours", IIF(outer.comp==...))
 
 		\bottomrule

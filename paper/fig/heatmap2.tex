@@ -1,0 +1,60 @@
+% IMPORT-DATA heatmap data/heatmap.txt
+
+% SQL ALTER TABLE heatmap ADD ds_and_model float
+% SQL UPDATE heatmap SET ds_and_model = storage_bits + COALESCE(model_bits, 0)
+
+    \begin{tikzpicture}
+        \begin{axis}[
+            title={},
+            xlabel={$S(ℳ,f)$},
+            height=3cm,
+            ylabel={Space Overhead (\%)},
+            every axis plot post/.append style={mark repeat=5},
+            cycle list={
+              {red,solid,mark=*},
+              {blue,solid,mark=square*},
+              {green,solid,mark=triangle*},
+            },
+            xmode=log,
+          ]
+          
+          
+          %% PLOT
+          %% SELECT
+          %%    cross_entropy_bit_per_key as x,
+          %%    100.0*(storage_bits / cross_entropy_bit_per_key -1.0) as y
+          %% FROM heatmap
+          %% WHERE classes==2
+          %% ORDER BY x
+          \addplot coordinates { (0.001766,23.0464) (0.002494,19.1259) (0.003277,15.9902) (0.004252,14.4403) (0.005722,12.583) (0.007926,11.1532) (0.010308,10.5937) (0.013754,9.88076) (0.018701,9.44335) (0.02487,9.07117) (0.033446,8.83215) (0.045206,8.72672) (0.061058,8.60493) (0.083902,8.54092) (0.115795,8.51418) (0.161395,8.50212) (0.223101,8.47284) (0.308217,8.47844) (0.428408,8.41488) (0.598406,8.20262) (0.835387,7.09456) };
+          
+
+          \addlegendentry{2 Classes};
+          
+          %% PLOT
+          %% SELECT
+          %%    cross_entropy_bit_per_key as x,
+          %%    100.0*(storage_bits / cross_entropy_bit_per_key -1.0) as y
+          %% FROM heatmap
+          %% WHERE classes==8
+          %% ORDER BY x
+          \addplot coordinates { (0.001112,34.2626) (0.001661,26.3697) (0.002281,21.9641) (0.003088,18.329) (0.00436,15.9633) (0.00604,14.1391) (0.00822,13.2847) (0.01153,12.1162) (0.015828,11.3154) (0.022184,10.8276) (0.030344,10.2491) (0.042015,9.97739) (0.058494,9.70014) (0.081367,9.55547) (0.112447,9.36352) (0.157127,9.10537) (0.219178,8.7819) (0.306826,8.69483) (0.42935,8.77186) (0.600352,8.64326) (0.841511,8.181) (1.173789,5.76194) (1.642692,6.40686) (2.29725,5.34526) };
+
+
+          \addlegendentry{8 Classes};
+          
+          %% PLOT
+          %% SELECT
+          %%    cross_entropy_bit_per_key as x,
+          %%    100.0*(storage_bits / cross_entropy_bit_per_key -1.0) as y
+          %% FROM heatmap
+          %% WHERE classes==32
+          %% ORDER BY x
+          \addplot coordinates { (0.001069,41.4406) (0.001506,34.1301) (0.002088,29.2146) (0.00303,24.8515) (0.004067,21.9572) (0.005688,20.3586) (0.007811,18.5764) (0.011064,17.5163) (0.015329,16.6482) (0.021695,16.0129) (0.029942,15.3397) (0.041847,14.8398) (0.058814,14.4098) (0.080188,14.0694) (0.112188,13.5968) (0.158765,13.1339) (0.219799,12.4778) (0.307345,11.4653) (0.432276,10.4887) (0.604497,10.7516) (0.842856,9.67947) (1.175717,7.804) (1.644532,6.7725) (2.300793,4.91252) (3.219987,3.56259) (4.502753,3.10919) };
+
+          
+          \addlegendentry{32 Classes};
+        \end{axis}
+    \end{tikzpicture}
+
+

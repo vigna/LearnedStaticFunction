@@ -11,12 +11,17 @@
             	solid,
             },
             no markers, 
-            width=6.5cm,	
-            height=4cm,
-            legend columns=-1,
+            width=6.2cm,	
+            height=3cm,
+            legend columns=1,
             scaled ticks=false,
-            tick label style={/pgf/number format/fixed},
-            legend style={at={(0.5,1.1)}, anchor=south},
+            tick label style={/pgf/number format/fixed},legend style={
+        at={(0.7,0.8)},      % position to the right
+        anchor=west,          % align left edge
+        legend cell align=left
+    },
+    clip marker paths=true,
+    clip=false,
             every axis plot post/.append style={mark repeat=50},
           ]
           
