@@ -118,19 +118,6 @@ def load_dataset(dataset_name):
     return X, y, classes
 
 # %%
-_SAFE_BYTE = bytes(b if b < 10 else b + 1 if b < 12 else b + 2 for b in range(254))
-
-def _encode_index_key(i):
-    # Encode i as 4 bytes in base 254, using the byte alphabet {0..255}\{0x0A,0x0D}
-    # so that Sux4J's line-based byte-array reader (which treats LF and CR as
-    # terminators) and C++ std::getline recover the exact same 4-byte key.
-    if i < 0 or i >= 254 ** 4:
-        raise ValueError(f"index {i} out of range for 4-byte base-254 key")
-    b0 = _SAFE_BYTE[(i // 254**3) % 254]
-    b1 = _SAFE_BYTE[(i // 254**2) % 254]
-    b2 = _SAFE_BYTE[(i // 254) % 254]
-    b3 = _SAFE_BYTE[i % 254]
-    return bytes((b0, b1, b2, b3))
 
 def prepare_dataset(dataset_name, X, y, classes):
     from sklearn.model_selection import train_test_split
@@ -147,15 +134,9 @@ def prepare_dataset(dataset_name, X, y, classes):
         f.write(struct.pack("<Q", Xt.shape[1]))
         Xt.tofile(f)
 
-    # Write data for sux4j: feed GOV the same (integer key, value) pairs BuRR
-    # sees. Each key is the row's ordinal index encoded as a 4-byte byte array
-    # (base-254 over a byte alphabet that avoids LF/CR so Sux4J's line-based
-    # byte-array reader and the C benchmark's std::getline agree on the bytes).
+    # Write values for GOV: keys are 0..n-1 as 4-byte native-order integers,
+    # generated programmatically by BuildCSF.java (no key file needed).
     np.array(y, dtype=np.int64).byteswap().tofile(f"processed_data/data_sux4j/{dataset_name}_y.sux4j")
-    with open(f"processed_data/data_sux4j/{dataset_name}_X.sux4j", "wb") as f:
-        for i in range(Xt.shape[0]):
-            f.write(_encode_index_key(i))
-            f.write(b"\n")
 
     return X_train, X_test, y_train, y_test
 
