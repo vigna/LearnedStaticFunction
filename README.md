@@ -31,9 +31,38 @@ static function needs only the key.
 The query methods of the paper's data structure,
 [`LearnedStaticFunction`](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf532e5a732cd841ab966734d0c67/include/lsf/learned_static_function.hpp#L127-L180),
 take both a key and a feature vector, and pass both to a private hash method,
-which is also used at construction time. The line that feeds the features to the
-hash function, however, is [commented
-out](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf532e5a732cd841ab966734d0c67/include/lsf/learned_static_function.hpp#L174-L179):
+which is also used at construction time. Everywhere the class computes a hash,
+it passes the features along
+([construction](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf532e5a732cd841ab966734d0c67/include/lsf/learned_static_function.hpp#L135-L150),
+[queries](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf532e5a732cd841ab966734d0c67/include/lsf/learned_static_function.hpp#L156-L162)):
+
+```cpp
+LearnedStaticFunction(const DataSet &dataset, Model &model) : model(model) {
+    // ...
+    storage.build(
+            dataset.size(),
+            dataset.classes_count(),
+            [&](size_t i) {
+                auto example = dataset.get_example(i);
+                return std::make_tuple(hash(i, example), dataset.get_label(i), model.invoke(example));
+            });
+    // ...
+}
+
+// ...
+
+auto query_storage(uint64_t key, std::span<const float> features) {
+    return storage.query_storage(hash(key, features));
+}
+
+uint64_t query(uint64_t key, std::span<const float> features) {
+    return storage.query(hash(key, features), query_probabilities(features));
+}
+```
+
+The line that feeds the features to the hash function, however, is [commented
+out](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf532e5a732cd841ab966734d0c67/include/lsf/learned_static_function.hpp#L174-L179)
+in the body of the private method:
 
 ```cpp
 uint64_t hash(uint64_t key, std::span<const float> features) {
@@ -127,7 +156,7 @@ Three claims of the published paper do not survive the correction:
 - “The query time of our LSF on the gauss dataset σ = 0.25 is close to the GOV
   competitor.” It is 3.6× slower (0.300 vs. 0.084 µs).
 
-## Remarks
+## Conclusions
 
 The authors have not explained how the asymmetry arose.
 
