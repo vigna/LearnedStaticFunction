@@ -85,9 +85,7 @@ index](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf5
 GOV was treated differently. The [training
 script](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf532e5a732cd841ab966734d0c67/train/train.py#L137-L144)
 wrote GOV's keys as the raw bytes of the feature vector (four bytes per feature)
-followed by a base85 encoding of the index: about 220 bytes per key on
-covertype, 110 on songs, 65 on urls, 45 on nids, and 9 on gauss. The index alone
-would have been enough to make the keys distinct. The [query
+followed by a base85 encoding of the index. The [query
 benchmark](https://github.com/gvinciguerra/LearnedStaticFunction/blob/1781876d3aaaf532e5a732cd841ab966734d0c67/csf/benchmark.cpp#L112-L118)
 loaded the keys into a `std::vector<std::string>`, so each query fetched a
 heap-allocated string from a random memory location and hashed all its bytes.
@@ -163,7 +161,7 @@ The authors have not explained how the asymmetry arose.
 The authors' structures were given an interface that takes the features, and
 their earlier prototypes hashed them; the feature hashing was disabled when the
 interface was written. The GOV benchmark, written three weeks later, was fed
-keys containing the features, although the index alone would have sufficed. GOV
+keys containing the features for no reason. GOV
 is the only structure in Table 5 that none of the paper's authors co-authored,
 and it is the only one that hashed the features. The resulting asymmetry
 supported one of the paper's claims: that the authors' non-learned CSF beats the
