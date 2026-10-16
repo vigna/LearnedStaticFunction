@@ -167,8 +167,15 @@ and it is the only one that hashed the features. The resulting asymmetry
 supported one of the paper's claims: that the authors' non-learned CSF beats the
 state of the art in all three metrics.
 
-The published GOV timings were implausible: GOV queries were 3.8× to 17× slower
+The published GOV timings were implausible. GOV queries were 3.8× to 17× slower
 than those of BuRR, whereas with the same keys the gap is between 1.9× and 4.2×.
+The timings were also incompatible with those in Table 6 of the [GOV
+paper](https://doi.org/10.1016/j.ic.2020.104517), measured on a 2017 CPU: there,
+the C implementation of the same structure (with *k* = 4, the variant used in
+Table 5) answers queries in 66 to 77 ns on 11 million host names. In Table 5,
+on the four real-world datasets, which have at most 1.4 million keys, GOV
+queries took 186 to 342 ns, that is, 2.4× to 5.2× longer.
+
 The commits are public, and readers can judge for themselves.
 
 ## Corrected versions
